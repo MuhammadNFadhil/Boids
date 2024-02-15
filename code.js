@@ -1,19 +1,21 @@
 const DEBUG = true;
 const DEBUG_BOID_PROTECTED_RANGE_COLOR = 'red';
 const DEBUG_BOID_VISUAL_RANGE_COLOR = 'transparent';
-const BOIDS_COUNT = 50;
-const BOID_SIZE = 15;
+const BOIDS_COUNT = 200;
+const BOID_SIZE = 10;
 const INITIAL_BOID_SPEED = 10;
-const BOID_VISUAL_RANGE = 200;
-const BOID_PROTECTED_RANGE = 70;
-const BOID_AVOID_FACTOR = 1;
-const BOID_MATCHING_FACTOR = 1;
-const BOID_CENTERING_FACTOR = 0.0005;
-const BOID_MAX_SPEED = 4; // FIXME: normalize!
+const BOID_VISUAL_RANGE = 40;
+const BOID_PROTECTED_RANGE = 8;
+const BOID_AVOID_FACTOR = 0.1;
+const BOID_MATCHING_FACTOR = 0.1;
+const BOID_CENTERING_FACTOR = 0.001;
+const BOID_MAX_SPEED = 6; // FIXME: normalize!
+const BOID_BIAS = 0.001;
+const BOID_BIAS_INCREMENT = 0.00004;
 const BORDER_MARGIN = 100;
-const TURN_FACTOR = 0.1;
+const TURN_FACTOR = 4;
 const BG_COLOR = '#222';
-const BOID_COLOR = '#7FA';
+const BOID_COLOR = '#2F5';
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -27,11 +29,18 @@ function setUpWorld() {
 }
 
 function generateBoids() {
-    for (let i = 0; i < BOIDS_COUNT; ++i)
-        boids.push({
+    for (let i = 0; i < BOIDS_COUNT; ++i) {
+        const rnd = Math.random();
+
+        boid = {
             ...generateRandomPosition(),
             ...generateRandomInitialVelocity(),
-        });
+            isLeftBiased: rnd < 0.1,
+            isRightBiased: rnd > 0.9,
+        };
+
+        boids.push(boid);
+    }
 }
 
 function generateRandomPosition() {
@@ -198,9 +207,6 @@ function moveBoids() {
         boid.vx += (xPosAvg - boid.x) * BOID_CENTERING_FACTOR
         boid.vy += (yPosAvg - boid.y) * BOID_CENTERING_FACTOR
 
-        boid.x += Math.min(boid.vx, BOID_MAX_SPEED);
-        boid.y += Math.min(boid.vy, BOID_MAX_SPEED);
-
         if (boid.x < BORDER_MARGIN)
             boid.vx = boid.vx + TURN_FACTOR
         if (boid.x > canvas.width - BORDER_MARGIN)
@@ -209,6 +215,15 @@ function moveBoids() {
             boid.vy = boid.vy - TURN_FACTOR
         if (boid.y < BORDER_MARGIN)
             boid.vy = boid.vy + TURN_FACTOR
+
+        // Apply biases:
+        if (boid.isRightBiased)
+            boid.vx = (1 - boid.biasval) * boid.vx + (boid.biasval * 1);
+        else if (boid.isLeftBiased)
+            boid.vx = (1 - boid.biasval) * boid.vx + (boid.biasval * (-1));
+
+        boid.x += Math.min(boid.vx, BOID_MAX_SPEED);
+        boid.y += Math.min(boid.vy, BOID_MAX_SPEED);
     }
 }
 
