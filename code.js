@@ -1,9 +1,13 @@
+const DEBUG = true;
+const DEBUG_BOID_PROTECTED_RANGE_COLOR = 'red';
+const DEBUG_BOID_VISUAL_RANGE_COLOR = 'transparent';
 const BOIDS_COUNT = 50;
 const BOID_SIZE = 15;
 const INITIAL_BOID_SPEED = 10;
 const BOID_VISUAL_RANGE = 200;
 const BOID_PROTECTED_RANGE = 70;
 const BOID_AVOID_FACTOR = 1;
+const BOID_MATCHING_FACTOR = 1;
 const BOID_MAX_SPEED = 4; // FIXME: normalize!
 const BG_COLOR = '#222';
 const BOID_COLOR = '#7FA';
@@ -61,10 +65,24 @@ function renderBoids() {
 }
 
 function renderBoid(boid, simplify = true) {
+    if (DEBUG) {
+        ctx.beginPath();
+        ctx.arc(boid.x, boid.y, BOID_PROTECTED_RANGE, 0, 2 * Math.PI, false);
+        ctx.strokeStyle = DEBUG_BOID_PROTECTED_RANGE_COLOR;
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(boid.x, boid.y, BOID_VISUAL_RANGE, 0, 2 * Math.PI, false);
+        ctx.strokeStyle = DEBUG_BOID_VISUAL_RANGE_COLOR;
+        ctx.closePath();
+        ctx.stroke();
+    }
+
     if (simplify) {
         ctx.beginPath();
         ctx.arc(boid.x, boid.y, BOID_SIZE, 0, 2 * Math.PI, false);
         ctx.fillStyle = BOID_COLOR;
+        ctx.closePath();
         ctx.fill();
         return;
     }
@@ -125,17 +143,42 @@ function moveBoids() {
         let closeDx = 0;
         let closeDy = 0;
 
+        let neighboring_boids = 0;
+        let xvel_avg = 0, yvel_avg = 0;
+
         for (otherBoid of boids) {
             const dist = distance(boid.x, boid.y, otherBoid.x, otherBoid.y);
+
+
             // Separation:
             if (dist < BOID_PROTECTED_RANGE) {
                 closeDx += boid.x - otherBoid.x;
                 closeDy += boid.y - otherBoid.y;
             }
+            // Alignment:
+            else if (dist < BOID_VISUAL_RANGE) {
+                xvel_avg += otherBoid.vx;
+                yvel_avg += otherBoid.vy;
+                neighboring_boids += 1;
+
+                closeDx += boid.x - otherBoid.x;
+                closeDy += boid.y - otherBoid.y;
+            }
         }
 
+        // Alignment:
+        if (neighboring_boids > 0) {
+            xvel_avg = xvel_avg / neighboring_boids;
+            yvel_avg = yvel_avg / neighboring_boids;
+        }
+
+        // Separation:
         boid.vx += closeDx * BOID_AVOID_FACTOR
         boid.vy += closeDy * BOID_AVOID_FACTOR
+
+        // Alignment:
+        boid.vx += (xvel_avg - boid.vx) * BOID_MATCHING_FACTOR;
+        boid.vy += (yvel_avg - boid.vy) * BOID_MATCHING_FACTOR;
 
         boid.x += Math.min(boid.vx, BOID_MAX_SPEED);
         boid.y += Math.min(boid.vy, BOID_MAX_SPEED);
