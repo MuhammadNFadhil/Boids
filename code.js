@@ -10,6 +10,8 @@ const BOID_AVOID_FACTOR = 1;
 const BOID_MATCHING_FACTOR = 1;
 const BOID_CENTERING_FACTOR = 0.0005;
 const BOID_MAX_SPEED = 4; // FIXME: normalize!
+const BORDER_MARGIN = 100;
+const TURN_FACTOR = 0.1;
 const BG_COLOR = '#222';
 const BOID_COLOR = '#7FA';
 
@@ -34,8 +36,8 @@ function generateBoids() {
 
 function generateRandomPosition() {
     return {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
+        x: Math.random() * (canvas.width - 2 * BORDER_MARGIN) + BORDER_MARGIN,
+        y: Math.random() * (canvas.height - 2 * BORDER_MARGIN) + BORDER_MARGIN,
     };
 }
 
@@ -198,6 +200,15 @@ function moveBoids() {
 
         boid.x += Math.min(boid.vx, BOID_MAX_SPEED);
         boid.y += Math.min(boid.vy, BOID_MAX_SPEED);
+
+        if (boid.x < BORDER_MARGIN)
+            boid.vx = boid.vx + TURN_FACTOR
+        if (boid.x > canvas.width - BORDER_MARGIN)
+            boid.vx = boid.vx - TURN_FACTOR
+        if (boid.y > canvas.height - BORDER_MARGIN)
+            boid.vy = boid.vy - TURN_FACTOR
+        if (boid.y < BORDER_MARGIN)
+            boid.vy = boid.vy + TURN_FACTOR
     }
 }
 
