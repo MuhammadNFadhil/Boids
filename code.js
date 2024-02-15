@@ -8,6 +8,7 @@ const BOID_VISUAL_RANGE = 200;
 const BOID_PROTECTED_RANGE = 70;
 const BOID_AVOID_FACTOR = 1;
 const BOID_MATCHING_FACTOR = 1;
+const BOID_CENTERING_FACTOR = 0.0005;
 const BOID_MAX_SPEED = 4; // FIXME: normalize!
 const BG_COLOR = '#222';
 const BOID_COLOR = '#7FA';
@@ -143,8 +144,9 @@ function moveBoids() {
         let closeDx = 0;
         let closeDy = 0;
 
-        let neighboring_boids = 0;
-        let xvel_avg = 0, yvel_avg = 0;
+        let neighboringBoids = 0;
+        let xVelAvg = 0, yVelAvg = 0;
+        let xPosAvg = 0, yPosAvg = 0;
 
         for (otherBoid of boids) {
             const dist = distance(boid.x, boid.y, otherBoid.x, otherBoid.y);
@@ -155,21 +157,31 @@ function moveBoids() {
                 closeDx += boid.x - otherBoid.x;
                 closeDy += boid.y - otherBoid.y;
             }
-            // Alignment:
             else if (dist < BOID_VISUAL_RANGE) {
-                xvel_avg += otherBoid.vx;
-                yvel_avg += otherBoid.vy;
-                neighboring_boids += 1;
+                // Alignment:
+                xVelAvg += otherBoid.vx;
+                yVelAvg += otherBoid.vy;
 
                 closeDx += boid.x - otherBoid.x;
                 closeDy += boid.y - otherBoid.y;
+
+                // Cohesion:
+                xPosAvg += otherBoid.x
+                yPosAvg += otherBoid.y
+
+
+                neighboringBoids += 1;
             }
         }
 
-        // Alignment:
-        if (neighboring_boids > 0) {
-            xvel_avg = xvel_avg / neighboring_boids;
-            yvel_avg = yvel_avg / neighboring_boids;
+        if (neighboringBoids > 0) {
+            // Alignment:
+            xVelAvg = xVelAvg / neighboringBoids;
+            yVelAvg = yVelAvg / neighboringBoids;
+
+            // Cohesion:
+            xPosAvg = xPosAvg / neighboringBoids
+            yPosAvg = yPosAvg / neighboringBoids
         }
 
         // Separation:
@@ -177,8 +189,12 @@ function moveBoids() {
         boid.vy += closeDy * BOID_AVOID_FACTOR
 
         // Alignment:
-        boid.vx += (xvel_avg - boid.vx) * BOID_MATCHING_FACTOR;
-        boid.vy += (yvel_avg - boid.vy) * BOID_MATCHING_FACTOR;
+        boid.vx += (xVelAvg - boid.vx) * BOID_MATCHING_FACTOR;
+        boid.vy += (yVelAvg - boid.vy) * BOID_MATCHING_FACTOR;
+
+        // Cohesion:
+        boid.vx += (xPosAvg - boid.x) * BOID_CENTERING_FACTOR
+        boid.vy += (yPosAvg - boid.y) * BOID_CENTERING_FACTOR
 
         boid.x += Math.min(boid.vx, BOID_MAX_SPEED);
         boid.y += Math.min(boid.vy, BOID_MAX_SPEED);
