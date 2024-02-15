@@ -9,13 +9,14 @@ const BOID_PROTECTED_RANGE = 8;
 const BOID_AVOID_FACTOR = 0.1;
 const BOID_MATCHING_FACTOR = 0.1;
 const BOID_CENTERING_FACTOR = 0.001;
-const BOID_MAX_SPEED = 6; // FIXME: normalize!
+const BOID_MAX_SPEED = 6;
+const BOID_MIN_SPEED = 3;
 const BOID_BIAS = 0.001;
 const BOID_BIAS_INCREMENT = 0.00004;
 const BORDER_MARGIN = 100;
 const TURN_FACTOR = 4;
 const BG_COLOR = '#222';
-const BOID_COLOR = '#2F5';
+const BOID_COLOR = '#7FA';
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -222,8 +223,20 @@ function moveBoids() {
         else if (boid.isLeftBiased)
             boid.vx = (1 - boid.biasval) * boid.vx + (boid.biasval * (-1));
 
-        boid.x += Math.min(boid.vx, BOID_MAX_SPEED);
-        boid.y += Math.min(boid.vy, BOID_MAX_SPEED);
+
+        const speed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy)
+
+        if (speed > BOID_MAX_SPEED) {
+            boid.vx = (boid.vx / speed) * BOID_MAX_SPEED
+            boid.vy = (boid.vy / speed) * BOID_MIN_SPEED
+        }
+        if (speed < BOID_MIN_SPEED) {
+            boid.vx = (boid.vx / speed) * BOID_MIN_SPEED
+            boid.vy = (boid.vy / speed) * BOID_MIN_SPEED
+        }
+
+        boid.x += boid.vx;
+        boid.y += boid.vy;
     }
 }
 
